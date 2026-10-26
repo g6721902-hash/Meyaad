@@ -1,0 +1,42 @@
+name: Build Meyaad APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Extract app project
+        run: |
+          mkdir /tmp/meyaad
+          unzip -o meyaad_app_v1.zip -d /tmp/meyaad
+          cp -a /tmp/meyaad/. .
+
+      - name: Generate Android project
+        run: flutter create --platforms=android --project-name=meyaad .
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: meyaad-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
