@@ -1,0 +1,43 @@
+name: Build Meyaad APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Extract project package
+        run: |
+          set -e
+          mkdir -p /tmp/meyaad
+          unzip -o meyaad_complete_project.zip -d /tmp/meyaad
+          cp -a /tmp/meyaad/. .
+          test -f pubspec.yaml
+          test -f lib/main.dart
+          test -f assets/meyaad_icon.png
+      - name: Generate Android project
+        run: flutter create --platforms=android --project-name=meyaad .
+      - name: Apply icon and Arabic app name
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 tool/apply_meyaad_icon.py
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Build APK
+        run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meyaad-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
