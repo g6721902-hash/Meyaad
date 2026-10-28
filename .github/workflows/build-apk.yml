@@ -1,9 +1,12 @@
+
 name: Build Meyaad APK
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, master]
+    branches:
+      - main
+      - master
 
 permissions:
   contents: read
@@ -13,26 +16,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Download project files
+        uses: actions/checkout@v4
 
-      - name: Setup Flutter
+      - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
-      - name: Extract app project
+      - name: Check project files
         run: |
-          mkdir /tmp/meyaad
-          unzip -o meyaad_app_v1.zip -d /tmp/meyaad
-          cp -a /tmp/meyaad/. .
+          test -f pubspec.yaml
+          test -f lib/main.dart
+          test -f lib/screens/search_screen.dart
 
       - name: Generate Android project
         run: flutter create --platforms=android --project-name=meyaad .
 
-      - name: Get dependencies
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK
+      - name: Build release APK
         run: flutter build apk --release
 
       - name: Upload APK
@@ -40,3 +45,4 @@ jobs:
         with:
           name: meyaad-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
